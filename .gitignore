@@ -1,0 +1,6 @@
+.pio
+.vscode/
+docs/doxygen_out/
+doxygen_warnings.log
+tool/ui_memcalc.*
+platformio_override.ini

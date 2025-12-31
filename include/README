@@ -1,0 +1,7 @@
+This directory contains project header files grouped by role:
+
+- include/common: shared headers (COBS, status codes, ui_buttons)
+- include/slave: display slave firmware interfaces
+- include/master: reference master interfaces
+
+Include the appropriate paths in your build (e.g., -I include/common).

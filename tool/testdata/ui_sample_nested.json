@@ -1,0 +1,39 @@
+{
+  "elements": [
+    {
+      "type": "screen",
+      "elements": [
+        { "type": "text", "x": 0, "y": 0, "text": "SCREEN0" },
+        {
+          "type": "list",
+          "x": 0,
+          "y": 8,
+          "rows": 3,
+          "elements": [
+            { "type": "text", "x": 8, "text": "ItemA", "capacity": 8 },
+            { "type": "text", "x": 8, "text": "ItemB" },
+            { "type": "text", "x": 8, "text": "ItemC" }
+          ]
+        },
+        {
+          "type": "barrel",
+          "x": 0,
+          "y": 24,
+          "value": 1,
+          "elements": [
+            { "type": "text", "x": 8, "text": "AUTO" },
+            { "type": "text", "x": 8, "text": "ECO" }
+          ]
+        },
+        { "type": "trigger", "x": 0, "y": 48 }
+      ]
+    },
+    {
+      "type": "screen",
+      "overlay": 1,
+      "elements": [
+        { "type": "text", "x": 0, "y": 0, "text": "OVERLAY" }
+      ]
+    }
+  ]
+}

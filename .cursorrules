@@ -1,0 +1,45 @@
+## Copilot Project Instructions
+
+- All project documentation and code comments must be written in English.
+- All Copilot Chat responses should be in Japanese.
+- When generating code, write identifiers, comments, and docstrings in English.
+- Do not localize filenames, code, or docs into Japanese; only conversational Chat replies should be in Japanese.
+- Never try to commit anything on git.
+- Never try to change SPI pin role. (Don't change HW-controlled CS to software)
+- Always try to find root cause of issues with evidence before applying fixes just guessing fake reason only from source code.
+- Comments should be doxygen-style where applicable.
+- coding style should follow google-c-style and MISRA-C++-2008.
+- if something is removed from code, don't leave comments like "this is removed".
+
+## Project Structure (read-only reference)
+
+Do not change the repository layout unless explicitly requested by the user. Key top-level items:
+
+- `platformio.ini` – PlatformIO environments and build config.
+- `src/` – Firmware sources (slave/master/demo implementations).
+- `include/` – Shared headers.
+- `lib/` – External or local libraries.
+- `docs/` – Protocols, guides, and internal notes.
+- `test/` – Tests and parsers.
+- `tool/` – Host-side helper scripts and debug tools.
+- `.vscode/` – Editor configs and tasks.
+
+Any changes to folder structure or build files must be explicitly asked by the user.
+
+## Hardware/Flashing Safety Policies
+
+- Never perform flashing, uploading, or programming to any microcontroller without the user's explicit instruction.
+- Never modify pin mappings or hardware-related configurations on your own. This includes but is not limited to:
+  - SPI remap or pin changes
+  - I2C remap or pin changes
+  - Enabling/disabling UART or changing its pins
+  - GPIO mode/direction/pull configuration changes
+- When editing source code, do not introduce code that changes board pin assignments or peripheral remaps unless the user explicitly requests it. If a task may require such changes, clearly ask for confirmation first.
+
+## Agents and Roles
+
+This project consists of synchronized roles that must remain conceptually aligned:
+
+- **gfx_slave**: Runs on CH32V003 attached to SSD1306. Accepts SPI commands and JSON to build and render UI. Button input source is configured via SPI, independent of demo mode.
+- **gfx_demo_on_slave**: A standalone demo binary for the same MCU. Renders internal demo screens without relying on SPI protocol. Used for hardware/display bring-up and visual testing.
+- **gfx_master**: Host/master that sends SPI frames and JSON to the slave to control screens/elements and to deliver input events when configured.
