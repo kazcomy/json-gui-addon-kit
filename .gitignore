@@ -3,3 +3,4 @@
 docs/doxygen_out/
 doxygen_warnings.log
 platformio_override.ini
+build/
