@@ -1,10 +1,21 @@
 /* Minimal gfx_master application: initializes SPI in master mode and performs basic testing */
 #include <string.h>
 
-#include "ch32fun.h"
+#include "ch32v/ch32v00x.h"
+#include "ch32v/ch32fun.h"
 #include "demo_json.h"
 #include "master_spi.h"
 #include "ui_buttons.h"
+
+/* Pin definitions */
+#define PC0 0
+#define PC5 5
+#define PC6 6
+#define PC7 7
+
+/* ch32v003fun compatibility macros */
+#define RCC_APB2Periph_GPIOC    RCC_APB2PCENR_IOPCEN
+#define RCC_APB2Periph_AFIO     RCC_APB2PCENR_AFIOEN
 
 #ifndef MASTER_SPI_PIN_FORCE_HIGH
 #define MASTER_SPI_PIN_FORCE_HIGH 0
@@ -19,14 +30,14 @@ static void master_spi_pins_force_high(void)
 {
   /* Ensure GPIOC + AFIO clocks are on for pin configuration. */
   RCC->APB2PCENR |= RCC_APB2Periph_GPIOC | RCC_APB2Periph_AFIO;
-  funPinMode(PC0, GPIO_CFGLR_OUT_50Mhz_PP); /* CS */
-  funPinMode(PC5, GPIO_CFGLR_OUT_50Mhz_PP); /* SCK */
-  funPinMode(PC6, GPIO_CFGLR_OUT_50Mhz_PP); /* MOSI */
-  funPinMode(PC7, GPIO_CFGLR_OUT_50Mhz_PP); /* MISO */
-  funDigitalWrite(PC0, 1);
-  funDigitalWrite(PC5, 1);
-  funDigitalWrite(PC6, 1);
-  funDigitalWrite(PC7, 1);
+  funPinMode(GPIOC, PC0, GPIO_CFGLR_OUT_50Mhz_PP); /* CS */
+  funPinMode(GPIOC, PC5, GPIO_CFGLR_OUT_50Mhz_PP); /* SCK */
+  funPinMode(GPIOC, PC6, GPIO_CFGLR_OUT_50Mhz_PP); /* MOSI */
+  funPinMode(GPIOC, PC7, GPIO_CFGLR_OUT_50Mhz_PP); /* MISO */
+  funDigitalWrite(GPIOC, PC0, 1);
+  funDigitalWrite(GPIOC, PC5, 1);
+  funDigitalWrite(GPIOC, PC6, 1);
+  funDigitalWrite(GPIOC, PC7, 1);
   while (1) {
     ;
   }

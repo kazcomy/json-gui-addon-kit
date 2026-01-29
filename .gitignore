@@ -1,5 +1,46 @@
+# PlatformIO (legacy)
 .pio
+.piohome
+platformio_override.ini
+
+# Build artifacts
+build/
+*.o
+*.elf
+*.hex
+*.bin
+*.map
+*.su
+*.d
+*.a
+
+# IDE and editor
 .vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Documentation
 docs/doxygen_out/
 doxygen_warnings.log
-platformio_override.ini
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+*.egg-info/
+dist/
+.pytest_cache/
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+.cache/

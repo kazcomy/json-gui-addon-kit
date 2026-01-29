@@ -9,7 +9,6 @@
  * ========================================================================= */
 #include "ssd1306_driver.h"
 
-#include <stdio.h>
 #include <string.h>
 
 #include "debug_led.h"

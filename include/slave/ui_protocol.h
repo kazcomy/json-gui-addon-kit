@@ -28,7 +28,8 @@ extern "C" {
 
 #include <stdint.h>
 /* Always include hardware headers; native build substitutes stubs (tool/hal_stub). */
-#include "ch32fun.h"
+#include "ch32v/ch32v00x.h"
+#include "ch32v/ch32fun.h"
 #include "element_types.h"
 #include "ssd1306_driver.h"
 #include "ui_runtime.h"

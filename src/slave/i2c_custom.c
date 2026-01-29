@@ -9,8 +9,6 @@
 
 #include "i2c_custom.h"
 
-#include <stdio.h>
-
 // I2C timeout value
 #define I2C_TIMEOUT 10000
 
@@ -33,9 +31,6 @@
 #define DMA_CFGR_CIRC (1 << 5)         // Circular mode enable
 #define DMA_CFGR_PINC (1 << 6)         // Peripheral increment mode
 #define DMA_CFGR_MINC (1 << 7)         // Memory increment mode
-#define DMA_CFGR_PSIZE_8BIT (0 << 8)   // Peripheral size: 8 bits
-#define DMA_CFGR_MSIZE_8BIT (0 << 10)  // Memory size: 8 bits
-#define DMA_CFGR_PL_HIGH (2 << 12)     // Priority level: High
 
 // DMA Interrupt flags for Channel 6
 #define DMA_ISR_TCIF6 (1 << (4 * (I2C1_TX_DMA_CHANNEL - 1) + 1))  // Transfer complete

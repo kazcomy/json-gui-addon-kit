@@ -3,7 +3,8 @@
 
 #include <stdint.h>
 
-#include "ch32fun.h"
+#include "ch32v/ch32v00x.h"
+#include "ch32v/ch32fun.h"
 
 // SPI1 DMA Channels according to CH32V003 Reference Manual
 #define SPI1_TX_DMA_CHANNEL 3

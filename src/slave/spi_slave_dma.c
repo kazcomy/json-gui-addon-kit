@@ -1,8 +1,33 @@
 #include "spi_slave_dma.h"
 
-#include <stdio.h>
+#include "ch32v/ch32v00x.h"
+#include "ch32v/ch32fun.h"
 
-#include "ch32v003fun.h"
+/* Pin definitions for compatibility */
+#define PC0 0
+#define PC5 5
+#define PC6 6
+#define PC7 7
+
+/* Helper macro for GPIO port selection */
+#define GpioOf(pin) GPIOC
+
+/* ch32v003fun compatibility macros */
+#define RCC_APB2Periph_AFIO     RCC_APB2PCENR_AFIOEN
+#define RCC_APB2Periph_GPIOC    RCC_APB2PCENR_IOPCEN
+#define RCC_APB2Periph_SPI1     RCC_APB2PCENR_SPI1EN
+#define RCC_AHBPeriph_DMA1      RCC_AHBPCENR_DMA1EN
+#define SPI_NSS_Soft            SPI_CTLR1_SSM
+#define SPI_NSSInternalSoft_Set SPI_CTLR1_SSI
+#define DMA_CFGR1_EN            DMA_CFGR_EN
+#define DMA_CFGR1_TCIE          DMA_CFGR_TCIE
+#define DMA_CFGR1_TEIE          DMA_CFGR_TEIE
+#define DMA_CFGR1_MINC          DMA_CFGR_MINC
+#define DMA_CFGR1_DIR           DMA_CFGR_DIR
+#define DMA_CFGR1_PL_1          (2 << DMA_CFGR_PL_Pos)
+#define DMA_CFGR1_PL_0          (1 << DMA_CFGR_PL_Pos)
+#define DMA1_IT_TE3             DMA_TEIF3
+#define DMA1_IT_TC3             DMA_TCIF3
 
 // static volatile uint8_t dma_tx_transfer_complete = 0;
 
@@ -18,11 +43,11 @@ void spi_slave_transport_init(void)
 
   /* Enable SPI1 remap to match wiring (PC5/PC6/PC7). PC0 is CS (input with pull-up). */
   AFIO->PCFR1 |= (1u << 0);
-  funPinMode(PC0, GPIO_CNF_IN_PUPD);
+  funPinMode(GPIOC, PC0, GPIO_CNF_IN_PUPD);
   GpioOf(PC0)->OUTDR |= (1u << (PC0 & 0xF));
-  funPinMode(PC5, GPIO_CNF_IN_FLOATING);
-  funPinMode(PC6, GPIO_CNF_IN_FLOATING);
-  funPinMode(PC7, GPIO_CFGLR_OUT_50Mhz_AF_PP);
+  funPinMode(GPIOC, PC5, GPIO_CNF_IN_FLOATING);
+  funPinMode(GPIOC, PC6, GPIO_CNF_IN_FLOATING);
+  funPinMode(GPIOC, PC7, GPIO_CFGLR_OUT_50Mhz_AF_PP);
 
   /* Initialize TX DMA engine for SPI1 */
   spi_slave_dma_init();

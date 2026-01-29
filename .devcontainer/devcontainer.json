@@ -1,0 +1,16 @@
+{
+  "name": "Remote Embedded Dev",
+  // ... (image指定など)
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  // 重要: ホストのvhciドライバを操作するために特権モードが必須
+  "runArgs": [
+    "--privileged"
+  ],
+
+  "remoteUser": "vscode"
+
+  // コンテナ作成時に必要なツールを入れる
+  //"postCreateCommand": "sudo apt-get update && sudo apt-get install -y linux-tools-generic hwdata usbutils openocd",
+}

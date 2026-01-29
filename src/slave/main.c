@@ -23,7 +23,8 @@
  * ============================================================================ */
 #include <string.h>
 
-#include "ch32fun.h"
+#include "ch32v/ch32v00x.h"
+#include "ch32v/ch32fun.h"
 #include "i2c_custom.h"
 #include "ssd1306_driver.h"
 #include "gfx_font.h"
@@ -37,6 +38,16 @@
 #define MAIN_LOOP_DELAY_MS 1
 
 
+/* Pin definitions */
+#define PD0 0
+#define PD3 3
+#define PD4 4
+#define PD6 6
+#define PC4 4
+#define PC3 3
+#define PD2 2
+#define PD5 5
+
 #define LED_PIN PD0
 #define INTERRUPT_PIN PD3
 
@@ -46,14 +57,14 @@ static uint8_t debug_led_state = 0U;
 static inline void debug_led_write(uint8_t on)
 {
   debug_led_state = (on != 0U) ? 1U : 0U;
-  funDigitalWrite(LED_PIN, debug_led_state);
+  funDigitalWrite(GPIOD, LED_PIN, debug_led_state);
 }
 
 /** Toggle debug LED output state. */
 static inline void debug_led_toggle(void)
 {
   debug_led_state ^= 1U;
-  funDigitalWrite(LED_PIN, debug_led_state);
+  funDigitalWrite(GPIOD, LED_PIN, debug_led_state);
 }
 
 /** System time counter in milliseconds. */
@@ -169,11 +180,21 @@ static const uint8_t pins[UI_BUTTON_COUNT] = {
   [UI_BUTTON_RIGHT] = LB_RIGHT_PIN,
 };
 
+/** Helper macro for getting GPIO port from pin number */
+static inline GPIO_TypeDef* get_port_from_pin(uint8_t pin) {
+    /* Simple implementation: assume all pins are on port D except PC3, PC4 */
+    if (pin == PC3 || pin == PC4) {
+        return GPIOC;
+    }
+    return GPIOD;
+}
+
 /** Configure GPIOs for the optional local button inputs. */
 static void local_buttons_setup(void)
 {
   for (uint8_t i = 0; i < sizeof(pins) / sizeof(pins[0]); i++) {
-    funPinMode(pins[i], GPIO_CNF_IN_FLOATING);
+    GPIO_TypeDef* port = get_port_from_pin(pins[i]);
+    funPinMode(port, pins[i], GPIO_CFGLR_IN_FLOATING);
   }
 }
 
@@ -185,7 +206,8 @@ static void local_buttons_poll(void)
 
   /* Translate local GPIO edges into protocol input events. */
   for (uint8_t i = 0; i < sizeof(pins) / sizeof(pins[0]); i++) {
-    curr[i] = funDigitalRead(pins[i]);
+    GPIO_TypeDef* port = get_port_from_pin(pins[i]);
+    curr[i] = funDigitalRead(port, pins[i]);
     if (prev[i] && !curr[i]) {
       static uint8_t pl[2] = {0, 0};
       pl[0] = i;
@@ -253,6 +275,13 @@ static void enter_standby_wait_cs_falling(void)
   while(i2c_tx_dma_busy());
   #endif
 
+  /* ch32v003fun compatibility macros for standby */
+  #define RCC_LSION (1 << 0)
+  #define RCC_LSIRDY (1 << 1)
+  #define RCC_APB2Periph_AFIO RCC_APB2PCENR_AFIOEN
+  #define EXTI_Line0 (1 << 0)
+  #define PWR_CTLR_PDDS (1 << 1)
+
   // Enable LSI clock for standby mode
   RCC->RSTSCKR |= RCC_LSION;
   while((RCC->RSTSCKR & RCC_LSIRDY) == 0);
@@ -261,8 +290,8 @@ static void enter_standby_wait_cs_falling(void)
   RCC->APB2PCENR |= RCC_APB2Periph_AFIO;
   /* Map EXTI line 0 to Port C (00=PA,01=PB,10=PC,11=PD) */
   //AFIO->EXTICR &= ~((uint32_t) (0x3u << (2 * 0)));
-  AFIO->EXTICR = 0; 
-  AFIO->EXTICR |= ((uint32_t) (0x2u << (2 * 0)));
+  AFIO->EXTICR[0] = 0; 
+  AFIO->EXTICR[0] |= ((uint32_t) (0x2u << (2 * 0)));
   /* Configure EXTI0 interrupt on falling edge (CS goes low) */
   EXTI->EVENR &= ~EXTI_Line0;         /* event not used */
   EXTI->RTENR &= ~EXTI_Line0;         /* rising disabled */
@@ -306,10 +335,10 @@ void system_init(void)
   Delay_Ms(100);  // Allow power of ssd1306 to stabilize
   SystemInit();
   funGpioInitAll();
-  funPinMode(LED_PIN, GPIO_Speed_10MHz | GPIO_CNF_OUT_PP);
+  funPinMode(GPIOD, LED_PIN, GPIO_CFGLR_OUT_10Mhz_PP);
   debug_led_write(0U);
-  funPinMode(INTERRUPT_PIN, GPIO_Speed_10MHz | GPIO_CNF_OUT_PP);
-  funDigitalWrite(INTERRUPT_PIN, 1);
+  funPinMode(GPIOD, INTERRUPT_PIN, GPIO_CFGLR_OUT_10Mhz_PP);
+  funDigitalWrite(GPIOD, INTERRUPT_PIN, 1);
   /* Initialize SPI slave transport early so we're ready before any host traffic */
   protocol_init();
   ssd1306_init();

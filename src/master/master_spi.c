@@ -94,6 +94,24 @@ static void delay_ms(uint32_t ms)
     }
   }
 }
+/* Pin definitions */
+#define PC0 0
+#define PC5 5
+#define PC6 6
+#define PC7 7
+
+/* ch32v003fun compatibility macros */
+#define RCC_APB2Periph_GPIOC        RCC_APB2PCENR_IOPCEN
+#define RCC_APB2Periph_AFIO         RCC_APB2PCENR_AFIOEN
+#define RCC_APB2Periph_SPI1         RCC_APB2PCENR_SPI1EN
+#define SPI_Mode_Master             SPI_CTLR1_MSTR
+#define SPI_DataSize_8b             (0)
+#define SPI_Direction_2Lines_FullDuplex (0)
+#define SPI_NSS_Soft                SPI_CTLR1_SSM
+#define SPI_NSSInternalSoft_Set     SPI_CTLR1_SSI
+#define CTLR2_SSOE_Set              SPI_CTLR2_SSOE
+#define CTLR1_SPE_Set               SPI_CTLR1_SPE
+
 /**
  * @brief Initialize SPI1 peripheral for master role (8-bit, Mode 0) using the remapped pins.
  *
@@ -118,11 +136,11 @@ void master_spi_init(void)
   AFIO->PCFR1 |= (1u << 0);
 
   /* Configure pins */
-  funPinMode(PC0, GPIO_CFGLR_OUT_50Mhz_PP);     // CS as GPIO
-  funDigitalWrite(PC0, 1);                      // CS high (inactive)
-  funPinMode(PC5, GPIO_CFGLR_OUT_50Mhz_AF_PP);  // SCK
-  funPinMode(PC6, GPIO_CFGLR_OUT_50Mhz_AF_PP);  // MOSI
-  funPinMode(PC7, GPIO_CNF_IN_FLOATING);        // MISO
+  funPinMode(GPIOC, PC0, GPIO_CFGLR_OUT_50Mhz_PP);     // CS as GPIO
+  funDigitalWrite(GPIOC, PC0, 1);                      // CS high (inactive)
+  funPinMode(GPIOC, PC5, GPIO_CFGLR_OUT_50Mhz_AF_PP);  // SCK
+  funPinMode(GPIOC, PC6, GPIO_CFGLR_OUT_50Mhz_AF_PP);  // MOSI
+  funPinMode(GPIOC, PC7, GPIO_CFGLR_IN_FLOATING);      // MISO
 
 
   /* Configure SPI1 as master */
@@ -143,12 +161,12 @@ void master_spi_init(void)
 
 void master_spi_cs_low(void)
 {
-  funDigitalWrite(PC0, 0);
+  funDigitalWrite(GPIOC, PC0, 0);
 }
 
 void master_spi_cs_high(void)
 {
-  funDigitalWrite(PC0, 1);
+  funDigitalWrite(GPIOC, PC0, 1);
 }
 
 /* Simple byte transfer with timeout */
