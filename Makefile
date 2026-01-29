@@ -123,14 +123,20 @@ MASTER_CFLAGS = $(COMMON_CFLAGS) $(COMMON_DEFS) \
 # Custom libgcc from ch32v003fun framework (smaller than default)
 CH32FUN_LIBGCC = $(CH32FUN_BASE)/misc/libgcc.a
 
-# Linker flags - Matching PlatformIO exactly
+# Linker flags - Matching PlatformIO exactly (including seemingly redundant -Wl,-gc-sections)
 LDFLAGS_BASE = \
-	$(ARCH_FLAGS) \
 	-T$(LD_DIR)/ch32v003f4p6.ld \
 	-fmerge-all-constants \
 	-Wl,--gc-sections,--relax,--print-memory-usage \
-	-specs=nano.specs \
-	-specs=nosys.specs \
+	-Os \
+	-g \
+	-march=rv32ecxw \
+	-mabi=ilp32e \
+	-ffunction-sections \
+	-fdata-sections \
+	-Wl,-gc-sections \
+	--specs=nano.specs \
+	--specs=nosys.specs \
 	-nostartfiles \
 	-flto \
 	-static-libgcc \
@@ -143,16 +149,14 @@ LDFLAGS_BASE = \
 # Debug build flags
 DEBUG_FLAGS = -Os -g3 -ggdb3 -fno-omit-frame-pointer
 
-# Object files
+# Object files (no separate startup.o - InterruptVector is in ch32fun.o)
 SLAVE_OBJS = $(patsubst $(SRC_DIR)/slave/%.c,$(BUILD_DIR)/slave/%.o,$(SLAVE_SRC)) \
              $(patsubst $(SRC_DIR)/common/%.c,$(BUILD_DIR)/common/%.o,$(COMMON_SRC)) \
-             $(BUILD_DIR)/ch32fun.o \
-             $(BUILD_DIR)/startup.o
+             $(BUILD_DIR)/ch32fun.o
 
 MASTER_OBJS = $(patsubst $(SRC_DIR)/master/%.c,$(BUILD_DIR)/master/%.o,$(MASTER_SRC)) \
               $(patsubst $(SRC_DIR)/common/%.c,$(BUILD_DIR)/common/%.o,$(COMMON_SRC)) \
-              $(BUILD_DIR)/ch32fun.o \
-              $(BUILD_DIR)/startup.o
+              $(BUILD_DIR)/ch32fun.o
 
 # Default target
 all: slave
