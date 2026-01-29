@@ -49,6 +49,14 @@ INC_PATHS = \
 
 # MCU-specific flags
 ARCH_FLAGS = \
+	-march=rv32ec \
+	-mabi=ilp32e \
+	-msmall-data-limit=0 \
+	-msave-restore \
+	-mrelax
+
+# Startup needs zicsr for CSR instructions
+STARTUP_ARCH_FLAGS = \
 	-march=rv32ec_zicsr \
 	-mabi=ilp32e \
 	-msmall-data-limit=0 \
@@ -93,7 +101,8 @@ COMMON_DEFS = \
 	-DFUNCONF_DISABLE_SSD1306=1 \
 	-DUSE_PAGE_BUFFER=1 \
 	-DPICOLIBC_INTEGER_PRINTF_SCANF \
-	-D__PICOLIBC_CRT0_MINIMAL__
+	-D__PICOLIBC_CRT0_MINIMAL__ \
+	-DDISABLE_DEBUG_LED=1
 
 # Slave-specific flags
 SLAVE_CFLAGS = $(COMMON_CFLAGS) $(COMMON_DEFS) $(INC_PATHS)
@@ -172,7 +181,7 @@ $(BUILD_DIR)/common/%.o: $(SRC_DIR)/common/%.c | $(BUILD_DIR)
 # Compile startup code
 $(BUILD_DIR)/startup.o: $(STARTUP_SRC) | $(BUILD_DIR)
 	@echo "AS $<"
-	@$(AS) -c $(ARCH_FLAGS) $< -o $@
+	@$(AS) -c $(STARTUP_ARCH_FLAGS) $< -o $@
 
 # Link ELF for slave
 $(BUILD_DIR)/$(TARGET_SLAVE).elf: $(SLAVE_OBJS)

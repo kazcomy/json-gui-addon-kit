@@ -51,6 +51,7 @@
 #define LED_PIN PD0
 #define INTERRUPT_PIN PD3
 
+#ifndef DISABLE_DEBUG_LED
 static uint8_t debug_led_state = 0U;
 
 /** Set debug LED output to a stable on/off state. */
@@ -66,10 +67,15 @@ static inline void debug_led_toggle(void)
   debug_led_state ^= 1U;
   funDigitalWrite(GPIOD, LED_PIN, debug_led_state);
 }
+#else
+static inline void debug_led_write(uint8_t on) { (void)on; }
+static inline void debug_led_toggle(void) { }
+#endif
 
 /** System time counter in milliseconds. */
 static uint32_t g_system_time_ms = 0;
 
+#ifndef DISABLE_DEBUG_LED
 typedef struct
 {
   uint8_t type;
@@ -150,6 +156,10 @@ void debug_led_process(void)
     }
   }
 }
+#else
+void debug_log_event(uint8_t type, uint8_t value) { (void)type; (void)value; }
+void debug_led_process(void) { }
+#endif
 
 /* Local button support. Default pins match reference wiring; adjust for your HW. */
 #ifndef LB_OK_PIN
@@ -335,8 +345,10 @@ void system_init(void)
   Delay_Ms(100);  // Allow power of ssd1306 to stabilize
   SystemInit();
   funGpioInitAll();
+#ifndef DISABLE_DEBUG_LED
   funPinMode(GPIOD, LED_PIN, GPIO_CFGLR_OUT_10Mhz_PP);
   debug_led_write(0U);
+#endif
   funPinMode(GPIOD, INTERRUPT_PIN, GPIO_CFGLR_OUT_10Mhz_PP);
   funDigitalWrite(GPIOD, INTERRUPT_PIN, 1);
   /* Initialize SPI slave transport early so we're ready before any host traffic */
