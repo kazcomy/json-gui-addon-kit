@@ -13,14 +13,21 @@ MCU_FAMILY = CH32V003
 TARGET_SLAVE = gfx_slave
 TARGET_MASTER = gfx_master
 
-# Toolchain - Auto-detect or use PlatformIO's toolchain
-PREFIX ?= riscv-none-elf-
-ifeq ($(shell which $(PREFIX)gcc 2>/dev/null),)
-    ifneq ($(wildcard $(HOME)/.platformio/packages/toolchain-riscv/bin/riscv-wch-elf-gcc),)
-        PREFIX = $(HOME)/.platformio/packages/toolchain-riscv/bin/riscv-wch-elf-
-    else
-        PREFIX = riscv64-unknown-elf-
-    endif
+# WCH Toolchain Configuration
+WCH_TOOLCHAIN ?= /opt/wch-toolchain
+
+# Toolchain prefix - WCH official toolchain ONLY (no fallbacks)
+# Try both possible GCC locations in MounRiverStudio structure
+ifneq ($(wildcard $(WCH_TOOLCHAIN)/toolchain/RISC-V-Embedded-GCC12/bin/riscv-wch-elf-gcc),)
+    PREFIX = $(WCH_TOOLCHAIN)/toolchain/RISC-V-Embedded-GCC12/bin/riscv-wch-elf-
+else ifneq ($(wildcard $(WCH_TOOLCHAIN)/toolchain/RISC-V-Embedded-GCC12/riscv-wch-elf/bin/riscv-wch-elf-gcc),)
+    PREFIX = $(WCH_TOOLCHAIN)/toolchain/RISC-V-Embedded-GCC12/riscv-wch-elf/bin/riscv-wch-elf-
+else ifneq ($(wildcard $(WCH_TOOLCHAIN)/Toolchain/RISC-V\ Embedded\ GCC12/bin/riscv-wch-elf-gcc),)
+    PREFIX = $(WCH_TOOLCHAIN)/Toolchain/RISC-V\ Embedded\ GCC12/bin/riscv-wch-elf-
+else ifneq ($(wildcard $(WCH_TOOLCHAIN)/RISC-V\ Embedded\ GCC12/bin/riscv-wch-elf-gcc),)
+    PREFIX = $(WCH_TOOLCHAIN)/RISC-V\ Embedded\ GCC12/bin/riscv-wch-elf-
+else
+    $(error WCH toolchain not found at $(WCH_TOOLCHAIN). Please run ./tool/setup_wch_toolchain.sh or set WCH_TOOLCHAIN environment variable)
 endif
 
 CC = $(PREFIX)gcc
@@ -29,6 +36,16 @@ CP = $(PREFIX)objcopy
 SZ = $(PREFIX)size
 AR = $(PREFIX)ar
 GDB = $(PREFIX)gdb
+
+# OpenOCD configuration
+ifneq ($(wildcard $(WCH_TOOLCHAIN)/OpenOCD/OpenOCD/bin/openocd),)
+    OPENOCD ?= $(WCH_TOOLCHAIN)/OpenOCD/OpenOCD/bin/openocd
+    OPENOCD_SCRIPTS ?= $(WCH_TOOLCHAIN)/OpenOCD/OpenOCD/scripts
+else
+    OPENOCD ?= $(WCH_TOOLCHAIN)/OpenOCD/bin/openocd
+    OPENOCD_SCRIPTS ?= $(WCH_TOOLCHAIN)/OpenOCD/scripts
+endif
+OPENOCD_CFG ?= $(OPENOCD_SCRIPTS)/wch-riscv.cfg
 
 # Directories
 SRC_DIR = src
@@ -42,11 +59,7 @@ COMMON_SRC = $(wildcard $(SRC_DIR)/common/*.c)
 SLAVE_SRC = $(wildcard $(SRC_DIR)/slave/*.c)
 MASTER_SRC = $(wildcard $(SRC_DIR)/master/*.c)
 STARTUP_SRC = $(STARTUP_DIR)/startup_ch32v00x.S
-CH32FUN_SRC = $(CH32FUN_BASE)/ch32fun/ch32fun.c
-
-# CH32V003Fun framework path (auto-detect PlatformIO installation)
-CH32FUN_BASE ?= $(HOME)/.platformio/packages/framework-ch32v003fun
-CH32FUN_INC = $(CH32FUN_BASE)/ch32fun
+SYSTEM_SRC = $(STARTUP_DIR)/system_ch32v00x.c
 
 # Include paths
 INC_PATHS = \
@@ -54,7 +67,7 @@ INC_PATHS = \
 	-I$(INC_DIR)/common \
 	-I$(INC_DIR)/slave \
 	-I$(INC_DIR)/master \
-	-I$(CH32FUN_INC) \
+	-I$(INC_DIR)/ch32v \
 	-Ilib/CH32V003_lib_i2c
 
 # MCU-specific flags - Matching PlatformIO's proven configuration
@@ -120,10 +133,7 @@ MASTER_CFLAGS = $(COMMON_CFLAGS) $(COMMON_DEFS) \
 	-DMASTER_HPRE=RCC_HPRE_DIV3 \
 	$(INC_PATHS)
 
-# Custom libgcc from ch32v003fun framework (smaller than default)
-CH32FUN_LIBGCC = $(CH32FUN_BASE)/misc/libgcc.a
-
-# Linker flags - Matching PlatformIO exactly (including seemingly redundant -Wl,-gc-sections)
+# Linker flags - Use WCH toolchain's standard libgcc
 LDFLAGS_BASE = \
 	-T$(LD_DIR)/ch32v003f4p6.ld \
 	-fmerge-all-constants \
@@ -140,23 +150,25 @@ LDFLAGS_BASE = \
 	-nostartfiles \
 	-flto \
 	-static-libgcc \
-	-nostdlib \
 	-Wl,--start-group \
+	-lc \
 	-lm \
-	$(CH32FUN_LIBGCC) \
+	-lgcc \
 	-Wl,--end-group
 
 # Debug build flags
 DEBUG_FLAGS = -Os -g3 -ggdb3 -fno-omit-frame-pointer
 
-# Object files (no separate startup.o - InterruptVector is in ch32fun.o)
+# Object files - Use WCH startup code
 SLAVE_OBJS = $(patsubst $(SRC_DIR)/slave/%.c,$(BUILD_DIR)/slave/%.o,$(SLAVE_SRC)) \
              $(patsubst $(SRC_DIR)/common/%.c,$(BUILD_DIR)/common/%.o,$(COMMON_SRC)) \
-             $(BUILD_DIR)/ch32fun.o
+             $(BUILD_DIR)/startup.o \
+             $(BUILD_DIR)/system_ch32v00x.o
 
 MASTER_OBJS = $(patsubst $(SRC_DIR)/master/%.c,$(BUILD_DIR)/master/%.o,$(MASTER_SRC)) \
               $(patsubst $(SRC_DIR)/common/%.c,$(BUILD_DIR)/common/%.o,$(COMMON_SRC)) \
-              $(BUILD_DIR)/ch32fun.o
+              $(BUILD_DIR)/startup.o \
+              $(BUILD_DIR)/system_ch32v00x.o
 
 # Default target
 all: slave
@@ -203,15 +215,15 @@ $(BUILD_DIR)/common/%.o: $(SRC_DIR)/common/%.c | $(BUILD_DIR)
 	@echo "  CC  $<"
 	@$(CC) -c $(SLAVE_CFLAGS) $< -o $@
 
-# Compile ch32fun framework
-$(BUILD_DIR)/ch32fun.o: $(CH32FUN_SRC) | $(BUILD_DIR)
-	@echo "  CC  $<"
-	@$(CC) -c $(SLAVE_CFLAGS) $< -o $@
-
 # Compile startup code
 $(BUILD_DIR)/startup.o: $(STARTUP_SRC) | $(BUILD_DIR)
 	@echo "  AS  $<"
-	@$(AS) -c $(STARTUP_ARCH_FLAGS) $< -o $@
+	@$(AS) -c $(STARTUP_ARCH_FLAGS) $(INC_PATHS) $< -o $@
+
+# Compile system initialization
+$(BUILD_DIR)/system_ch32v00x.o: $(SYSTEM_SRC) | $(BUILD_DIR)
+	@echo "  CC  $<"
+	@$(CC) -c $(COMMON_CFLAGS) $(COMMON_DEFS) $(INC_PATHS) $< -o $@
 
 # Link ELF for slave
 $(BUILD_DIR)/$(TARGET_SLAVE).elf: $(SLAVE_OBJS)
@@ -247,14 +259,23 @@ size-analysis: slave
 	@echo "=== Section Sizes ==="
 	@$(PREFIX)size -A $(BUILD_DIR)/$(TARGET_SLAVE).elf
 
-# Flash using wlink (to be implemented with debug-probe-hub)
+# Flash using OpenOCD
 flash-slave: slave
-	@echo "Flashing $(BUILD_DIR)/$(TARGET_SLAVE).hex"
-	@echo "TODO: Integrate with debug-probe-hub or wlink"
+	@echo "Flashing $(BUILD_DIR)/$(TARGET_SLAVE).hex via OpenOCD"
+	$(OPENOCD) -f $(OPENOCD_CFG) \
+		-c "program $(BUILD_DIR)/$(TARGET_SLAVE).hex verify reset exit"
 
 flash-master: master
-	@echo "Flashing $(BUILD_DIR)/$(TARGET_MASTER).hex"
-	@echo "TODO: Integrate with debug-probe-hub or wlink"
+	@echo "Flashing $(BUILD_DIR)/$(TARGET_MASTER).hex via OpenOCD"
+	$(OPENOCD) -f $(OPENOCD_CFG) \
+		-c "program $(BUILD_DIR)/$(TARGET_MASTER).hex verify reset exit"
+
+# Start OpenOCD debug server for GDB
+debug-slave-server:
+	$(OPENOCD) -f $(OPENOCD_CFG) -c "gdb_port 3333"
+
+debug-master-server:
+	$(OPENOCD) -f $(OPENOCD_CFG) -c "gdb_port 3333"
 
 # Stack usage analysis (disable LTO for accurate results)
 analyze-stack: COMMON_CFLAGS := $(filter-out -flto -fuse-linker-plugin, $(COMMON_CFLAGS))
@@ -281,4 +302,4 @@ help:
 	@echo "  Target MCU: $(MCU)"
 	@echo "  Build directory: $(BUILD_DIR)/"
 
-.PHONY: all slave master debug-slave debug-master clean flash-slave flash-master analyze-stack size-analysis help
+.PHONY: all slave master debug-slave debug-master clean flash-slave flash-master debug-slave-server debug-master-server analyze-stack size-analysis help

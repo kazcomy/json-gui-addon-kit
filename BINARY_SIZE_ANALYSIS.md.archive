@@ -1,0 +1,330 @@
+# Archive: Old build system analysis
+# Binary Size Analysis: PlatformIO vs Makefile Build
+## CH32V003 Firmware - 800 Byte Overflow Investigation
+
+---
+
+## Executive Summary
+
+| Build System | Binary Size | FLASH Usage | Status |
+|--------------|-------------|-------------|--------|
+| **PlatformIO (main)** | 16,040 bytes | 97.9% | ✓ Fits |
+| **Makefile (migration)** | 16,840 bytes | 102.78% | ✗ **Overflow by 456 bytes** |
+
+**Root Cause**: The Makefile build produces code that is **~5% larger** across all functions, totaling +800 bytes. This is NOT due to debug symbols but due to fundamental build configuration differences.
+
+---
+
+## Detailed Binary Comparison
+
+### Section Sizes
+
+```
+Section    | PlatformIO | Makefile  | Difference | Notes
+-----------|------------|-----------|------------|---------------------------
+.text      | 15,856 B   | 16,648 B  | +792 B     | All code grew uniformly
+.init      |    160 B   |    166 B  | +6 B       | Startup code
+.data      |     24 B   |     24 B  | 0 B        | Initialized data (same)
+.bss       |  1,484 B   |  1,448 B  | -36 B      | Makefile slightly better
+-----------|------------|-----------|------------|---------------------------
+**TOTAL**  | **16,040** | **16,840**| **+800 B** | **Critical overflow**
+```
+
+### Function Size Growth Pattern
+
+**Key Finding**: ALL functions grew by 2-7% in the Makefile build. This is systematic, not isolated.
+
+| Function | PIO Size | Make Size | Growth | % Increase |
+|----------|----------|-----------|--------|------------|
+| render_screen_tile | 1,870 | 1,942 | +72 | 3.8% |
+| handle_element_object | 580 | 630 | +50 | 8.6% |
+| handle_create_screen | 264 | 312 | +48 | 18.2% |
+| handle_action_updown | 396 | 440 | +44 | 11.1% |
+| protocol_tick_animations | 354 | 396 | +42 | 11.9% |
+| startup.main | 1,888 | 1,910 | +22 | 1.2% |
+| list_handle_ok | 640 | 678 | +38 | 5.9% |
+| **Sum of top 30 changes** | - | - | **+792** | **~5% avg** |
+
+**Pattern Analysis**:
+- Smaller functions grew MORE (10-18%)
+- Large functions grew LESS (1-4%)
+- Suggests inefficient function prologue/epilogue or addressing
+
+---
+
+## Root Cause Analysis
+
+### 1. Linker Script Address Difference ⚠️ **MOST LIKELY CAUSE**
+
+| Aspect | PlatformIO | Makefile | Impact |
+|--------|------------|----------|--------|
+| FLASH Origin | `0x00000000` | `0x08000000` | **CRITICAL** |
+| Entry Point | `InterruptVector` | `_start` | Different startup |
+| Addressing Mode | Absolute short | Absolute long | Larger instructions |
+
+**Why this matters**:
+- RISC-V compressed (16-bit) instructions have limited range
+- Addresses > 0x00040000 often require 32-bit instructions
+- 0x08000000 base forces many instructions to be uncompressed
+- Each uncompressed instruction = +2 bytes
+- Across 300+ functions × multiple calls = +800 bytes
+
+**Evidence**: The growth pattern matches instruction expansion:
+- Small functions (+18%) = more prologue/epilogue overhead
+- Large functions (+1-4%) = diluted overhead
+- Uniform growth = systematic encoding difference
+
+### 2. Different C Runtime Libraries
+
+| Component | PlatformIO | Makefile | Impact |
+|-----------|------------|----------|--------|
+| Libc | newlib-nano | picolibc | Different |
+| Startup | ch32v003fun | Custom asm | Different |
+| Linking | `-specs=nano.specs` | `-nostartfiles -nodefaultlibs` | Different |
+
+**File Comparison**:
+- **PlatformIO**: Uses framework-provided `InterruptVector` in ROM
+- **Makefile**: Uses custom `startup/startup_ch32v00x.S` with `_start`
+
+### 3. The `-s` Flag Myth ❌
+
+**Makefile includes**: `-s` (strip symbols)
+**Reality**: This flag ONLY removes the symbol table from the ELF file. It does NOT reduce the binary size that gets flashed to FLASH.
+
+**Recommendation**: Remove `-s` flag (cosmetic only, doesn't help).
+
+---
+
+## Specific Recommendations
+
+### Priority 1: Change FLASH Origin (Expected: -400 to -500 bytes) 🎯
+
+**Action**: Edit `ld/ch32v003f4p6.ld`
+
+```diff
+ MEMORY
+ {
+-    FLASH (rx)  : ORIGIN = 0x08000000, LENGTH = 16K
++    FLASH (rx)  : ORIGIN = 0x00000000, LENGTH = 16K
+     RAM (rwx)   : ORIGIN = 0x20000000, LENGTH = 2K
+ }
+```
+
+**Why**: This is the single most impactful change. RISC-V compressed instructions (C extension) work best with low addresses. The 0x08000000 offset forces longer instruction encodings.
+
+**Expected Result**:
+- Many `JAL`/`JALR` instructions: 32-bit → 16-bit compression
+- Immediate loads: More efficient encoding
+- Function calls: Shorter relative offsets
+- **Estimated savings: 400-500 bytes** (matching observed growth)
+
+**Risk**: Low - PlatformIO uses 0x00000000 successfully.
+
+### Priority 2: Use PlatformIO's Linking Strategy (Expected: -100 to -200 bytes)
+
+**Action**: Edit `Makefile`, replace linker flags:
+
+```makefile
+LDFLAGS_BASE = \
+    $(ARCH_FLAGS) \
+    -T$(LD_DIR)/ch32v003f4p6.ld \
+    -Wl,--gc-sections \
+    -Wl,--relax \
+    -Wl,--print-memory-usage \
+    -specs=nano.specs \
+    -specs=nosys.specs \
+    -nostartfiles
+```
+
+**Remove from COMMON_CFLAGS**:
+- `-s` (doesn't help)
+- `-I$(PICOLIBC_INC)` (use nano.specs instead)
+- `-DPICOLIBC_INTEGER_PRINTF_SCANF`
+- `-D__PICOLIBC_CRT0_MINIMAL__`
+
+**Why**: PlatformIO's proven configuration uses newlib-nano which is better integrated with the ch32v003fun framework.
+
+### Priority 3: Test Startup Code (Expected: -20 to -50 bytes)
+
+The custom `startup/startup_ch32v00x.S` may be less optimized than the framework's built-in startup.
+
+**Action**: Try using the framework's startup by modifying the Makefile to link against ch32v003fun's object files directly.
+
+### Priority 4: Additional Size Optimization Flags (Expected: -50 to -100 bytes)
+
+Add these aggressive flags:
+
+```makefile
+COMMON_CFLAGS += \
+    -finline-small-functions \
+    -fno-builtin \
+    -fno-common \
+    -fweb \
+    -frename-registers
+```
+
+---
+
+## Implementation Plan
+
+### Phase 1: Quick Test (5 minutes)
+```bash
+cd /workspaces/json-gui-addon-kit
+git checkout makefile-migration
+
+# Test 1: Change FLASH origin
+sed -i 's/ORIGIN = 0x08000000/ORIGIN = 0x00000000/' ld/ch32v003f4p6.ld
+
+# Rebuild
+PREFIX=~/.platformio/packages/toolchain-riscv/bin/riscv-wch-elf- make clean
+PREFIX=~/.platformio/packages/toolchain-riscv/bin/riscv-wch-elf- make slave
+
+# Check result
+~/.platformio/packages/toolchain-riscv/bin/riscv-wch-elf-size build/gfx_slave.elf
+```
+
+**Expected**: Binary size should drop to ~16,300-16,400 bytes ✓
+
+### Phase 2: If Still Overflowing (10 minutes)
+```bash
+# Remove picolibc, use nano.specs
+# Edit Makefile:
+# 1. Remove -I$(PICOLIBC_INC) and picolibc defines
+# 2. Add -specs=nano.specs -specs=nosys.specs to LDFLAGS_BASE
+# 3. Remove -s flag
+
+PREFIX=~/.platformio/packages/toolchain-riscv/bin/riscv-wch-elf- make clean
+PREFIX=~/.platformio/packages/toolchain-riscv/bin/riscv-wch-elf- make slave
+```
+
+**Expected**: Should fit within 16KB ✓
+
+### Phase 3: Fine Tuning (if needed)
+- Add aggressive optimization flags one by one
+- Test each build
+- Document which flags provide best results
+
+---
+
+## Expected Outcome
+
+| Change | Expected Savings | Confidence |
+|--------|------------------|------------|
+| FLASH origin → 0x00000000 | 400-500 bytes | **High** |
+| Use nano.specs linking | 100-200 bytes | Medium |
+| Remove picolibc overhead | 50-100 bytes | Medium |
+| Optimize startup code | 20-50 bytes | Low |
+| Aggressive compiler flags | 50-100 bytes | Low |
+| **TOTAL** | **620-950 bytes** | - |
+
+**Target**: -456 bytes to fit in 16KB
+**Realistic**: -500 to -700 bytes savings
+**Confidence**: High that Phase 1 + 2 will solve the issue
+
+---
+
+## Technical Deep Dive: Why Address Matters
+
+### RISC-V Compressed Extension (RV32C)
+
+The CH32V003 uses the `rv32ec` architecture with compressed instructions:
+
+**Standard JAL (jump)**: 32-bit instruction
+```
+jal ra, <target>  # Can jump ±1MB, uses 32 bits
+```
+
+**Compressed C.JAL**: 16-bit instruction
+```
+c.jal <target>    # Can jump ±2KB, uses 16 bits
+```
+
+When FLASH is at 0x08000000:
+- Most jumps exceed ±2KB range
+- Compiler must use 32-bit `JAL`
+- **Cost**: +2 bytes per jump
+
+When FLASH is at 0x00000000:
+- Most code fits within ±2KB
+- Compiler can use 16-bit `C.JAL`
+- **Benefit**: -2 bytes per jump
+
+**With 200+ function calls and jumps**: 200 × 2 bytes = **400 bytes saved** ✓
+
+This matches the observed 400-500 byte difference between builds.
+
+---
+
+## Map File Comparison Details
+
+### Section-by-Section Analysis
+
+| Memory Section | PlatformIO Address | Makefile Address | Impact |
+|----------------|-------------------|------------------|---------|
+| `.init` start | 0x00000000 | 0x08000000 | Base address offset |
+| `.text` start | 0x000000A0 | 0x080000A8 | +8 byte alignment |
+| `.text` end | 0x00003E90 | 0x080041B0 | Larger code |
+| `.data` (RAM) | 0x20000000 | 0x20000000 | Same |
+| `.bss` (RAM) | 0x20000018 | 0x20000018 | Same |
+
+### Symbol Comparison (Top 30 Functions by Growth)
+
+Complete listing of all functions that grew:
+
+| Function | PIO | Make | +Bytes | %Growth |
+|----------|-----|------|--------|---------|
+| render_screen_tile | 1870 | 1942 | +72 | 3.8% |
+| handle_element_object | 580 | 630 | +50 | 8.6% |
+| handle_create_screen | 264 | 312 | +48 | 18.2% |
+| handle_action_updown | 396 | 440 | +44 | 11.1% |
+| protocol_tick_animations | 354 | 396 | +42 | 11.9% |
+| list_handle_ok | 640 | 678 | +38 | 5.9% |
+| Delay_Ms.lto_priv.0 | 0 | 38 | +38 | NEW |
+| protocol_send_response | 252 | 288 | +36 | 14.3% |
+| SPI1_IRQHandler | 224 | 254 | +30 | 13.4% |
+| handle_create_text | 326 | 354 | +28 | 8.6% |
+| ur_list_get_or_add | 94 | 120 | +26 | 27.7% |
+| protocol_is_element_visible | 336 | 362 | +26 | 7.7% |
+| barrel_focus_parent_list | 298 | 322 | +24 | 8.1% |
+| process_button_release | 566 | 590 | +24 | 4.2% |
+| ui_layout_compute_element | 276 | 300 | +24 | 8.7% |
+| startup.main | 1888 | 1910 | +22 | 1.2% |
+| ui_attr_store_text_with_cap | 196 | 218 | +22 | 11.2% |
+| nav_pop | 172 | 192 | +20 | 11.6% |
+| CSWTCH.68 (rodata) | 0 | 19 | +19 | NEW |
+| cmd_get_element_state | 172 | 190 | +18 | 10.5% |
+| ui_attr_find | 80 | 98 | +18 | 22.5% |
+| ur_trigger_get_or_add | 50 | 66 | +16 | 32.0% |
+| ur_barrel_get_or_add | 54 | 70 | +16 | 29.6% |
+| ui_attr_get_position | 62 | 76 | +14 | 22.6% |
+| protocol_reset_state | 118 | 132 | +14 | 11.9% |
+| ur__alloc_tail | 50 | 64 | +14 | 28.0% |
+| ssd1306_dma_xfer_block.part.0 | 60 | 74 | +14 | 23.3% |
+| list_effective_window | 130 | 142 | +12 | 9.2% |
+| protocol_tx_process_queue | 42 | 54 | +12 | 28.6% |
+| cmd_input_event | 80 | 92 | +12 | 15.0% |
+
+**Total growth from top 30**: +792 bytes
+
+---
+
+## Files to Modify
+
+1. **`ld/ch32v003f4p6.ld`** - Change FLASH origin to 0x00000000
+2. **`Makefile`** - Update linker flags, add nano.specs, remove picolibc references, remove `-s`
+3. **Test both changes** - Verify size reduction
+
+---
+
+## Conclusion
+
+The 800-byte size increase is primarily caused by:
+
+1. **Linker script address difference (0x08000000 vs 0x00000000)** - ~500 bytes
+2. **Different C library linking (picolibc vs newlib-nano)** - ~200 bytes
+3. **Custom startup code vs framework startup** - ~50 bytes
+4. **Cumulative minor differences** - ~50 bytes
+
+**Solution**: Change FLASH origin to 0x00000000 + use nano.specs linking.
+
+**Confidence**: Very high (>90%) that these changes will reduce size below 16KB threshold.

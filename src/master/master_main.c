@@ -1,7 +1,7 @@
 /* Minimal gfx_master application: initializes SPI in master mode and performs basic testing */
 #include <string.h>
 
-#include "ch32fun.h"
+#include "ch32v00x.h"
 #include "demo_json.h"
 #include "master_spi.h"
 #include "ui_buttons.h"

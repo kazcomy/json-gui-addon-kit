@@ -20,7 +20,7 @@
 #include "ui_numeric.h"
 #include "ui_tree.h"
 /* Always include hardware headers; native build substitutes stub versions via test/hal_stub. */
-#include "ch32fun.h"
+#include "ch32v00x.h"
 #include "debug_led.h"
 #include "ssd1306_driver.h"
 /* COBS for response encoding */

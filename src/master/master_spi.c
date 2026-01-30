@@ -3,6 +3,7 @@
 #include <stddef.h>
 #include <string.h>
 
+#include "ch32v00x.h"
 #include "cobs.h"
 #include "status_codes.h"
 #include <sys/unistd.h>
@@ -375,7 +376,7 @@ int master_send_command_no_response(uint8_t cmd, const uint8_t* payload, uint8_t
   return 0;
 }
 
-/* printf is provided by ch32v003fun when FUNCONF_USE_DEBUGPRINTF or
+/* printf is provided when FUNCONF_USE_DEBUGPRINTF or
  * FUNCONF_USE_UARTPRINTF is enabled via build flags.
  */
 

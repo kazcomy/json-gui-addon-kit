@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Super simple remote OpenOCD launcher for PlatformIO.
+"""Super simple remote OpenOCD launcher for WCH toolchain.
 
 Do only one thing:
     ssh -L <local>:localhost:<remote> user@host <openocd ...>
@@ -10,9 +10,10 @@ Environment variables (all optional):
     REMOTE_USER (default: current user)
     REMOTE_HOST (required if --host is not provided)
     REMOTE_GDB_PORT / LOCAL_GDB_PORT (default both 3333)
-    OPENOCD_PATH (~/.platformio/.../openocd)
-    OPENOCD_SCRIPTS (.../scripts)
-    OPENOCD_CFG (.../wch-riscv.cfg)
+    WCH_TOOLCHAIN (default: /opt/wch-toolchain)
+    OPENOCD_PATH (default: WCH_TOOLCHAIN/OpenOCD/bin/openocd)
+    OPENOCD_SCRIPTS (default: WCH_TOOLCHAIN/OpenOCD/scripts)
+    OPENOCD_CFG (default: WCH_TOOLCHAIN/OpenOCD/scripts/wch-riscv.cfg)
     SSH_VERBOSE=1  (adds -vvv)
     USE_SUDO=1     (prefix openocd with sudo)
 
@@ -49,9 +50,10 @@ def main():
     rport = int(os.environ.get("REMOTE_GDB_PORT", "3333"))
     lport = int(os.environ.get("LOCAL_GDB_PORT", str(rport)))
 
-    openocd = os.environ.get("OPENOCD_PATH", "~/.platformio/packages/tool-openocd-riscv-wch/bin/openocd")
-    scripts = os.environ.get("OPENOCD_SCRIPTS", "~/.platformio/packages/tool-openocd-riscv-wch/scripts")
-    cfg     = os.environ.get("OPENOCD_CFG", "~/.platformio/packages/tool-openocd-riscv-wch/bin/wch-riscv.cfg")
+    wch_toolchain = os.environ.get("WCH_TOOLCHAIN", "/opt/wch-toolchain")
+    openocd = os.environ.get("OPENOCD_PATH", f"{wch_toolchain}/OpenOCD/bin/openocd")
+    scripts = os.environ.get("OPENOCD_SCRIPTS", f"{wch_toolchain}/OpenOCD/scripts")
+    cfg     = os.environ.get("OPENOCD_CFG", f"{wch_toolchain}/OpenOCD/scripts/wch-riscv.cfg")
     extra   = os.environ.get("OPENOCD_EXTRA_CMDS", "")  # e.g. "; adapter speed 2000"
 
     sudo_prefix = "sudo " if os.environ.get("USE_SUDO") else ""

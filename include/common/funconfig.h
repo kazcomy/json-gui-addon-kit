@@ -18,7 +18,7 @@
 // board definition file will already take care of this
 /** Enable CH32V003 specific features. */
 #define CH32V003 1
-// SSD1306_128X32 is now defined in platformio.ini build flags
+
 /** Use default I2C pinout configuration. */
 #define I2C_PINOUT_DEFAULT
 

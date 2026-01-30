@@ -12,7 +12,7 @@
 
 #include <stddef.h>
 
-#include "ch32fun.h"
+#include "ch32v00x.h"
 
 /*** Error Types *************************************************************/
 typedef enum {

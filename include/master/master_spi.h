@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#include "ch32fun.h"
+#include "ch32v00x.h"
 
 /* Shared protocol basics (duplicated minimal to avoid slave headers) */
 #define SPI_FRAME_START 0xAA

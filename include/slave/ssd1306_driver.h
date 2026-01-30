@@ -8,7 +8,7 @@
 
 #include <stdint.h>
 
-#include "ch32fun.h"
+#include "ch32v00x.h"
 #include "gfx_shared.h"
 #include "i2c_custom.h"
 

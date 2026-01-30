@@ -3,7 +3,7 @@
  * @brief CH32V003 register definitions and peripheral structures
  *
  * Based on WCH CH32V003 Reference Manual
- * Replaces ch32v003fun framework with minimal register definitions
+ * CH32V003 register definitions and peripheral structures
  */
 
 #ifndef __CH32V00X_H
@@ -119,6 +119,9 @@ typedef struct {
     volatile uint32_t APB1PCENR;/* RCC APB1 peripheral clock enable,    offset: 0x1C */
     volatile uint32_t RSTSCKR;  /* RCC reset and clock source register, offset: 0x24 */
 } RCC_TypeDef;
+
+/* Alias for compatibility */
+#define RCC_CR      CTLR
 
 /* SPI Register Structure */
 typedef struct {
@@ -271,6 +274,8 @@ typedef struct {
 #define RCC_APB2PCENR_USART1EN          (1 << 14)
 #define RCC_APB2Periph_GPIOC            RCC_APB2PCENR_IOPCEN
 #define RCC_APB2Periph_AFIO             RCC_APB2PCENR_AFIOEN
+#define RCC_APB2Periph_SPI1             RCC_APB2PCENR_SPI1EN
+#define RCC_AHBPeriph_DMA1              RCC_AHBPCENR_DMA1EN
 
 /* RCC_APB1PCENR Register Bits */
 #define RCC_APB1PCENR_TIM2EN            (1 << 0)
@@ -302,6 +307,15 @@ typedef struct {
 #define SPI_CTLR1_CRCEN                 (1 << 13)
 #define SPI_CTLR1_BIDIOE                (1 << 14)
 #define SPI_CTLR1_BIDIMODE              (1 << 15)
+
+/* SPI legacy names */
+#define SPI_NSS_Soft                    SPI_CTLR1_SSM
+#define SPI_NSSInternalSoft_Set         SPI_CTLR1_SSI
+#define SPI_Mode_Master                 SPI_CTLR1_MSTR
+#define SPI_DataSize_8b                 0  /* DFF=0 for 8-bit */
+#define SPI_Direction_2Lines_FullDuplex 0  /* BIDIMODE=0, RXONLY=0 */
+#define CTLR1_SPE_Set                   SPI_CTLR1_SPE
+#define CTLR2_SSOE_Set                  SPI_CTLR2_SSOE
 
 /* SPI_CTLR2 Register Bits */
 #define SPI_CTLR2_RXDMAEN               (1 << 0)
@@ -359,6 +373,33 @@ typedef struct {
 #define DMA_HTIF3                       (1 << 10)
 #define DMA_TEIF3                       (1 << 11)
 
+/* DMA IT flags (interrupt flags) */
+#define DMA1_IT_GL1                     DMA_GIF1
+#define DMA1_IT_TC1                     DMA_TCIF1
+#define DMA1_IT_HT1                     DMA_HTIF1
+#define DMA1_IT_TE1                     DMA_TEIF1
+#define DMA1_IT_GL2                     DMA_GIF2
+#define DMA1_IT_TC2                     DMA_TCIF2
+#define DMA1_IT_HT2                     DMA_HTIF2
+#define DMA1_IT_TE2                     DMA_TEIF2
+#define DMA1_IT_GL3                     DMA_GIF3
+#define DMA1_IT_TC3                     DMA_TCIF3
+#define DMA1_IT_HT3                     DMA_HTIF3
+#define DMA1_IT_TE3                     DMA_TEIF3
+
+/* DMA CFGR legacy names (CFGR1_xxx for compatibility) */
+#define DMA_CFGR1_EN                    DMA_CFGR_EN
+#define DMA_CFGR1_TCIE                  DMA_CFGR_TCIE
+#define DMA_CFGR1_HTIE                  DMA_CFGR_HTIE
+#define DMA_CFGR1_TEIE                  DMA_CFGR_TEIE
+#define DMA_CFGR1_DIR                   DMA_CFGR_DIR
+#define DMA_CFGR1_CIRC                  DMA_CFGR_CIRC
+#define DMA_CFGR1_PINC                  DMA_CFGR_PINC
+#define DMA_CFGR1_MINC                  DMA_CFGR_MINC
+#define DMA_CFGR1_PL_0                  (1 << DMA_CFGR_PL_Pos)
+#define DMA_CFGR1_PL_1                  (2 << DMA_CFGR_PL_Pos)
+#define DMA_CFGR1_PL_MASK               (3 << DMA_CFGR_PL_Pos)
+
 /* GPIO Configuration Modes */
 #define GPIO_CNF_IN_ANALOG              0x00
 #define GPIO_CNF_IN_FLOATING            0x04
@@ -372,6 +413,11 @@ typedef struct {
 #define GPIO_MODE_OUT_10MHz             0x01
 #define GPIO_MODE_OUT_2MHz              0x02
 #define GPIO_MODE_OUT_50MHz             0x03
+
+/* GPIO Speed aliases for compatibility */
+#define GPIO_Speed_10MHz                GPIO_MODE_OUT_10MHz
+#define GPIO_Speed_2MHz                 GPIO_MODE_OUT_2MHz
+#define GPIO_Speed_50MHz                GPIO_MODE_OUT_50MHz
 
 /* AFIO_PCFR1 Register Bits */
 #define AFIO_PCFR1_SPI1_REMAP           (1 << 0)
@@ -450,7 +496,57 @@ typedef struct {
 #define I2C_CKCFGR_DUTY                 (1 << 14)
 #define I2C_CKCFGR_FS                   (1 << 15)
 
+/* RCC_CR (CTLR) Register Bits */
+#define RCC_CR_HSION                    (1 << 0)
+#define RCC_CR_HSIRDY                   (1 << 1)
+#define RCC_CR_HSITRIM_Pos              3
+#define RCC_CR_HSITRIM_Msk              (0x1F << RCC_CR_HSITRIM_Pos)
+#define RCC_CR_HSICAL_Pos               8
+#define RCC_CR_HSICAL_Msk               (0xFF << RCC_CR_HSICAL_Pos)
+#define RCC_CR_HSEON                    (1 << 16)
+#define RCC_CR_HSERDY                   (1 << 17)
+#define RCC_CR_HSEBYP                   (1 << 18)
+#define RCC_CR_CSSON                    (1 << 19)
+#define RCC_CR_PLLON                    (1 << 24)
+#define RCC_CR_PLLRDY                   (1 << 25)
+
+/* RCC_RSTSCKR Register Bits (Reset and Clock Status) */
+#define RCC_LSION                       (1 << 0)
+#define RCC_LSIRDY                      (1 << 1)
+
+/* RCC_CFGR0 Register Bits */
+#define RCC_CFGR0_SW_Pos                0
+#define RCC_CFGR0_SW_Msk                (0x3 << RCC_CFGR0_SW_Pos)
+#define RCC_CFGR0_SW_HSI                (0x0 << RCC_CFGR0_SW_Pos)
+#define RCC_CFGR0_SW_HSE                (0x1 << RCC_CFGR0_SW_Pos)
+#define RCC_CFGR0_SW_PLL                (0x2 << RCC_CFGR0_SW_Pos)
+#define RCC_CFGR0_SWS_Pos               2
+#define RCC_CFGR0_SWS_Msk               (0x3 << RCC_CFGR0_SWS_Pos)
+#define RCC_CFGR0_SWS                   RCC_CFGR0_SWS_Msk
+#define RCC_CFGR0_HPRE_Pos              4
+#define RCC_CFGR0_HPRE_Msk              (0xF << RCC_CFGR0_HPRE_Pos)
+#define RCC_CFGR0_HPRE                  RCC_CFGR0_HPRE_Msk
+#define RCC_CFGR0_PPRE1_Pos             8
+#define RCC_CFGR0_PPRE1_Msk             (0x7 << RCC_CFGR0_PPRE1_Pos)
+#define RCC_CFGR0_PPRE2_Pos             11
+#define RCC_CFGR0_PPRE2_Msk             (0x7 << RCC_CFGR0_PPRE2_Pos)
+#define RCC_CFGR0_ADCPRE_Pos            14
+#define RCC_CFGR0_ADCPRE_Msk            (0x3 << RCC_CFGR0_ADCPRE_Pos)
+#define RCC_CFGR0_PLLSRC                (1 << 16)
+#define RCC_CFGR0_PLLXTPRE              (1 << 17)
+#define RCC_CFGR0_PLLMUL_Pos            18
+#define RCC_CFGR0_PLLMUL_Msk            (0xF << RCC_CFGR0_PLLMUL_Pos)
+#define RCC_CFGR0_PLLMUL                RCC_CFGR0_PLLMUL_Msk
+
 /* System clock frequency (default 48MHz HSI) */
+#ifndef HSI_VALUE
+#define HSI_VALUE                       48000000
+#endif
+
+#ifndef HSE_VALUE
+#define HSE_VALUE                       24000000
+#endif
+
 #ifndef SYSCLK_FREQ_48MHz_HSI
 #define SYSCLK_FREQ_48MHz_HSI           48000000
 #endif
@@ -459,10 +555,100 @@ typedef struct {
 #define FUNCONF_SYSTEM_CORE_CLOCK       SYSCLK_FREQ_48MHz_HSI
 #endif
 
+/* External declarations */
+extern uint32_t SystemCoreClock;
+void SystemInit(void);
+void SystemCoreClockUpdate(void);
+void Delay_Us(uint32_t us);
+void Delay_Ms(uint32_t ms);
+
 /* WFI instruction wrapper */
 static inline void __WFI(void) {
     __asm__ volatile ("wfi");
 }
+
+/* ================================================================================ */
+/* ================        GPIO Helper Functions ()  ================ */
+/* ================================================================================ */
+
+/* Pin definitions - Encoded format
+ * Upper nibble: Port (0=A, 1=C, 2=D), Lower nibble: Pin number
+ */
+#define PA0  0x00
+#define PA1  0x01
+#define PA2  0x02
+#define PC0  0x10
+#define PC1  0x11
+#define PC2  0x12
+#define PC3  0x13
+#define PC4  0x14
+#define PC5  0x15
+#define PC6  0x16
+#define PC7  0x17
+#define PD0  0x20
+#define PD1  0x21
+#define PD2  0x22
+#define PD3  0x23
+#define PD4  0x24
+#define PD5  0x25
+#define PD6  0x26
+#define PD7  0x27
+
+/* GpioOf macro - Convert pin number to GPIO port pointer */
+#define GpioOf(pin) ((GPIO_TypeDef *)(\
+    ((pin) & 0xF0) == 0x00 ? (uint32_t)GPIOA : \
+    ((pin) & 0xF0) == 0x10 ? (uint32_t)GPIOC : \
+    ((pin) & 0xF0) == 0x20 ? (uint32_t)GPIOD : 0))
+
+/* GPIO pin mode configuration helper - ible */
+static inline void funPinMode(uint8_t pin_num, uint32_t mode) {
+    GPIO_TypeDef *port = GpioOf(pin_num);
+    uint8_t pin = pin_num & 0x0F;
+    uint32_t config = mode & 0x0F;
+
+    if (pin < 8) {
+        uint32_t shift = pin * 4;
+        port->CFGLR = (port->CFGLR & ~(0x0F << shift)) | (config << shift);
+    } else {
+        uint32_t shift = (pin - 8) * 4;
+        port->CFGHR = (port->CFGHR & ~(0x0F << shift)) | (config << shift);
+    }
+}
+
+/* GPIO digital write - ible */
+static inline void funDigitalWrite(uint8_t pin_num, uint8_t value) {
+    GPIO_TypeDef *port = GpioOf(pin_num);
+    uint8_t pin = pin_num & 0x0F;
+
+    if (value) {
+        port->BSHR = (1 << pin);
+    } else {
+        port->BSHR = (1 << (pin + 16));
+    }
+}
+
+/* GPIO digital read - ible */
+static inline uint8_t funDigitalRead(uint8_t pin_num) {
+    GPIO_TypeDef *port = GpioOf(pin_num);
+    uint8_t pin = pin_num & 0x0F;
+    return (port->INDR & (1 << pin)) ? 1 : 0;
+}
+
+/* GPIO port initialization - Enable all GPIO clocks */
+static inline void funGpioInitAll(void) {
+    RCC->APB2PCENR |= RCC_APB2PCENR_IOPAEN | RCC_APB2PCENR_IOPCEN | RCC_APB2PCENR_IOPDEN;
+}
+
+/* Pin mode constants () */
+#define GPIO_CFGLR_OUT_10Mhz_PP     ((GPIO_CNF_OUT_PP) | (GPIO_MODE_OUT_10MHz))
+#define GPIO_CFGLR_OUT_2Mhz_PP      ((GPIO_CNF_OUT_PP) | (GPIO_MODE_OUT_2MHz))
+#define GPIO_CFGLR_OUT_50Mhz_PP     ((GPIO_CNF_OUT_PP) | (GPIO_MODE_OUT_50MHz))
+#define GPIO_CFGLR_OUT_10Mhz_OD     ((GPIO_CNF_OUT_OD) | (GPIO_MODE_OUT_10MHz))
+#define GPIO_CFGLR_OUT_10Mhz_AF_PP  ((GPIO_CNF_OUT_PP_AF) | (GPIO_MODE_OUT_10MHz))
+#define GPIO_CFGLR_OUT_50Mhz_AF_PP  ((GPIO_CNF_OUT_PP_AF) | (GPIO_MODE_OUT_50MHz))
+#define GPIO_CFGLR_IN_ANALOG        ((GPIO_CNF_IN_ANALOG) | (GPIO_MODE_IN))
+#define GPIO_CFGLR_IN_FLOATING      ((GPIO_CNF_IN_FLOATING) | (GPIO_MODE_IN))
+#define GPIO_CFGLR_IN_PUPD          ((GPIO_CNF_IN_PUPD) | (GPIO_MODE_IN))
 
 #ifdef __cplusplus
 }

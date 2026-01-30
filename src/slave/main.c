@@ -23,7 +23,7 @@
  * ============================================================================ */
 #include <string.h>
 
-#include "ch32fun.h"
+#include "ch32v00x.h"
 #include "i2c_custom.h"
 #include "ssd1306_driver.h"
 #include "gfx_font.h"
@@ -260,9 +260,9 @@ static void enter_standby_wait_cs_falling(void)
   /* AFIO for EXTI configuration */
   RCC->APB2PCENR |= RCC_APB2Periph_AFIO;
   /* Map EXTI line 0 to Port C (00=PA,01=PB,10=PC,11=PD) */
-  //AFIO->EXTICR &= ~((uint32_t) (0x3u << (2 * 0)));
-  AFIO->EXTICR = 0; 
-  AFIO->EXTICR |= ((uint32_t) (0x2u << (2 * 0)));
+  //AFIO->EXTICR[0] &= ~((uint32_t) (0x3u << (2 * 0)));
+  AFIO->EXTICR[0] = 0;
+  AFIO->EXTICR[0] |= ((uint32_t) (0x2u << (2 * 0)));
   /* Configure EXTI0 interrupt on falling edge (CS goes low) */
   EXTI->EVENR &= ~EXTI_Line0;         /* event not used */
   EXTI->RTENR &= ~EXTI_Line0;         /* rising disabled */

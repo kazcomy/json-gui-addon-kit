@@ -2,7 +2,7 @@
 
 #include <stdio.h>
 
-#include "ch32fun.h"
+#include "ch32v00x.h"
 
 // static volatile uint8_t dma_tx_transfer_complete = 0;
 
