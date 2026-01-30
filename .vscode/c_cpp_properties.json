@@ -1,0 +1,41 @@
+{
+    "configurations": [
+        {
+            "name": "CH32V003",
+            "includePath": [
+                "${workspaceFolder}/include/**",
+                "${workspaceFolder}/src",
+                "${workspaceFolder}/lib/**",
+                "/opt/wch-toolchain/toolchain/RISC-V-Embedded-GCC12/riscv-wch-elf/include",
+                "/opt/wch-toolchain/toolchain/RISC-V-Embedded-GCC12/lib/gcc/riscv-wch-elf/12.0.0/include"
+            ],
+            "browse": {
+                "limitSymbolsToIncludedHeaders": true,
+                "path": [
+                    "${workspaceFolder}/include/**",
+                    "${workspaceFolder}/src",
+                    "${workspaceFolder}/lib/**"
+                ]
+            },
+            "defines": [
+                "CH32V003",
+                "FUNCONF_DISABLE_SSD1306=1",
+                "USE_PAGE_BUFFER=1",
+                "SYSCLK_FREQ_48MHz_HSI=48000000",
+                "TARGET_MCU=CH32V003"
+            ],
+            "cStandard": "gnu11",
+            "cppStandard": "gnu++17",
+            "compilerPath": "/opt/wch-toolchain/toolchain/RISC-V-Embedded-GCC12/bin/riscv-wch-elf-gcc",
+            "compilerArgs": [
+                "-march=rv32ecxw",
+                "-mabi=ilp32e",
+                "-mrelax",
+                "-msmall-data-limit=0",
+                "-msave-restore"
+            ],
+            "intelliSenseMode": "gcc-x64"
+        }
+    ],
+    "version": 4
+}

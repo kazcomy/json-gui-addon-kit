@@ -1,0 +1,151 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Start Debug-Probe-Hub Tunnel (Slave)",
+            "type": "shell",
+            "command": "python3",
+            "args": [
+                "${workspaceFolder}/tool/debug-probe-hub-client/gdb_tunnel.py",
+                "--target",
+                "${env:DEBUG_PROBE_HUB_TARGET}",
+                "--probe",
+                "${env:DEBUG_PROBE_HUB_PROBE}",
+                "--local-port",
+                "3333"
+            ],
+            "isBackground": true,
+            "problemMatcher": {
+                "pattern": {
+                    "regexp": "^(.*)$",
+                    "line": 1
+                },
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": "^Starting debug session",
+                    "endsPattern": "^✓ GDB tunnel ready"
+                }
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "dedicated",
+                "showReuseMessage": false,
+                "clear": false
+            }
+        },
+        {
+            "label": "Start Debug-Probe-Hub Tunnel (Master)",
+            "type": "shell",
+            "command": "python3",
+            "args": [
+                "${workspaceFolder}/tool/debug-probe-hub-client/gdb_tunnel.py",
+                "--target",
+                "${env:DEBUG_PROBE_HUB_TARGET}",
+                "--probe",
+                "${env:DEBUG_PROBE_HUB_PROBE}",
+                "--local-port",
+                "3333"
+            ],
+            "isBackground": true,
+            "problemMatcher": {
+                "pattern": {
+                    "regexp": "^(.*)$",
+                    "line": 1
+                },
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": "^Starting debug session",
+                    "endsPattern": "^✓ GDB tunnel ready"
+                }
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "dedicated",
+                "showReuseMessage": false,
+                "clear": false
+            }
+        },
+        {
+            "label": "Stop Debug-Probe-Hub Tunnel",
+            "type": "shell",
+            "command": "pkill",
+            "args": [
+                "-f",
+                "gdb_tunnel.py"
+            ],
+            "problemMatcher": []
+        },
+        {
+            "label": "Flash Slave via Debug-Probe-Hub",
+            "type": "shell",
+            "command": "make",
+            "args": [
+                "flash-slave-remote"
+            ],
+            "problemMatcher": []
+        },
+        {
+            "label": "Flash Master via Debug-Probe-Hub",
+            "type": "shell",
+            "command": "make",
+            "args": [
+                "flash-master-remote"
+            ],
+            "problemMatcher": []
+        },
+        {
+            "label": "Start OpenOCD Server (Slave)",
+            "type": "shell",
+            "command": "make",
+            "args": [
+                "debug-slave-server"
+            ],
+            "isBackground": true,
+            "problemMatcher": {
+                "pattern": {
+                    "regexp": "^(.*)$",
+                    "line": 1
+                },
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": "^Open On-Chip Debugger",
+                    "endsPattern": "^Info : Listening on port 3333 for gdb connections"
+                }
+            }
+        },
+        {
+            "label": "Start OpenOCD Server (Master)",
+            "type": "shell",
+            "command": "make",
+            "args": [
+                "debug-master-server"
+            ],
+            "isBackground": true,
+            "problemMatcher": {
+                "pattern": {
+                    "regexp": "^(.*)$",
+                    "line": 1
+                },
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": "^Open On-Chip Debugger",
+                    "endsPattern": "^Info : Listening on port 3333 for gdb connections"
+                }
+            }
+        },
+        {
+            "label": "Stop OpenOCD Server",
+            "type": "shell",
+            "command": "pkill",
+            "args": [
+                "-f",
+                "openocd"
+            ],
+            "problemMatcher": []
+        }
+    ]
+}

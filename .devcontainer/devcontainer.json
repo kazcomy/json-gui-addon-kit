@@ -12,7 +12,7 @@
 	// "forwardPorts": [],
 
 	// Use 'postCreateCommand' to run commands after the container is created.
-	"postCreateCommand": {"uname -a", "sudo apt update && sudo apt install git-lfs"}
+	"postCreateCommand": "sudo apt update && sudo apt install -y git-lfs python3-requests"
 
 	// Configure tool-specific properties.
 	// "customizations": {},

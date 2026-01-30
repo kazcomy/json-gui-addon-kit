@@ -1,0 +1,137 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "cppdbg",
+            "request": "launch",
+            "name": "Debug Slave (GDB + OpenOCD)",
+            "program": "${workspaceFolder}/build/gfx_slave.elf",
+            "cwd": "${workspaceFolder}",
+            "MIMode": "gdb",
+            "miDebuggerPath": "/opt/wch-toolchain/toolchain/RISC-V-Embedded-GCC12/bin/riscv-wch-elf-gdb",
+            "miDebuggerServerAddress": "localhost:3333",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Connect to OpenOCD",
+                    "text": "target extended-remote localhost:3333"
+                },
+                {
+                    "description": "Reset and halt",
+                    "text": "monitor reset halt"
+                },
+                {
+                    "description": "Load program",
+                    "text": "load"
+                }
+            ],
+            "preLaunchTask": "Start OpenOCD Server (Slave)",
+            "postDebugTask": "Stop OpenOCD Server",
+            "stopAtEntry": false,
+            "externalConsole": false
+        },
+        {
+            "type": "cppdbg",
+            "request": "launch",
+            "name": "Debug Master (GDB + OpenOCD)",
+            "program": "${workspaceFolder}/build/gfx_master.elf",
+            "cwd": "${workspaceFolder}",
+            "MIMode": "gdb",
+            "miDebuggerPath": "/opt/wch-toolchain/toolchain/RISC-V-Embedded-GCC12/bin/riscv-wch-elf-gdb",
+            "miDebuggerServerAddress": "localhost:3333",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Connect to OpenOCD",
+                    "text": "target extended-remote localhost:3333"
+                },
+                {
+                    "description": "Reset and halt",
+                    "text": "monitor reset halt"
+                },
+                {
+                    "description": "Load program",
+                    "text": "load"
+                }
+            ],
+            "preLaunchTask": "Start OpenOCD Server (Master)",
+            "postDebugTask": "Stop OpenOCD Server",
+            "stopAtEntry": false,
+            "externalConsole": false
+        },
+        {
+            "type": "cppdbg",
+            "request": "launch",
+            "name": "Debug Slave (Debug-Probe-Hub)",
+            "program": "${workspaceFolder}/build/gfx_slave.elf",
+            "cwd": "${workspaceFolder}",
+            "MIMode": "gdb",
+            "miDebuggerPath": "/opt/wch-toolchain/toolchain/RISC-V-Embedded-GCC12/bin/riscv-wch-elf-gdb",
+            "miDebuggerServerAddress": "localhost:3333",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Connect to OpenOCD via debug-probe-hub",
+                    "text": "target extended-remote localhost:3333"
+                },
+                {
+                    "description": "Reset and halt",
+                    "text": "monitor reset halt"
+                },
+                {
+                    "description": "Load program",
+                    "text": "load"
+                }
+            ],
+            "preLaunchTask": "Start Debug-Probe-Hub Tunnel (Slave)",
+            "postDebugTask": "Stop Debug-Probe-Hub Tunnel",
+            "stopAtEntry": false,
+            "externalConsole": false
+        },
+        {
+            "type": "cppdbg",
+            "request": "launch",
+            "name": "Debug Master (Debug-Probe-Hub)",
+            "program": "${workspaceFolder}/build/gfx_master.elf",
+            "cwd": "${workspaceFolder}",
+            "MIMode": "gdb",
+            "miDebuggerPath": "/opt/wch-toolchain/toolchain/RISC-V-Embedded-GCC12/bin/riscv-wch-elf-gdb",
+            "miDebuggerServerAddress": "localhost:3333",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Connect to OpenOCD via debug-probe-hub",
+                    "text": "target extended-remote localhost:3333"
+                },
+                {
+                    "description": "Reset and halt",
+                    "text": "monitor reset halt"
+                },
+                {
+                    "description": "Load program",
+                    "text": "load"
+                }
+            ],
+            "preLaunchTask": "Start Debug-Probe-Hub Tunnel (Master)",
+            "postDebugTask": "Stop Debug-Probe-Hub Tunnel",
+            "stopAtEntry": false,
+            "externalConsole": false
+        }
+    ]
+}

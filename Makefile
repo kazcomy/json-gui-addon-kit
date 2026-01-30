@@ -47,6 +47,10 @@ else
 endif
 OPENOCD_CFG ?= $(OPENOCD_SCRIPTS)/wch-riscv.cfg
 
+# debug-probe-hub configuration
+DEBUG_PROBE_HUB_TARGET ?= ch32v003
+DEBUG_PROBE_HUB_PROBE ?= 4
+
 # Directories
 SRC_DIR = src
 INC_DIR = include
@@ -277,6 +281,21 @@ debug-slave-server:
 debug-master-server:
 	$(OPENOCD) -f $(OPENOCD_CFG) -c "gdb_port 3333"
 
+# Flash via debug-probe-hub (remote)
+flash-slave-remote: slave
+	@echo "Flashing $(BUILD_DIR)/$(TARGET_SLAVE).bin via debug-probe-hub"
+	python3 tool/debug-probe-hub-client/flash.py \
+		--target $(DEBUG_PROBE_HUB_TARGET) \
+		--probe $(DEBUG_PROBE_HUB_PROBE) \
+		--firmware $(BUILD_DIR)/$(TARGET_SLAVE).bin
+
+flash-master-remote: master
+	@echo "Flashing $(BUILD_DIR)/$(TARGET_MASTER).bin via debug-probe-hub"
+	python3 tool/debug-probe-hub-client/flash.py \
+		--target $(DEBUG_PROBE_HUB_TARGET) \
+		--probe $(DEBUG_PROBE_HUB_PROBE) \
+		--firmware $(BUILD_DIR)/$(TARGET_MASTER).bin
+
 # Stack usage analysis (disable LTO for accurate results)
 analyze-stack: COMMON_CFLAGS := $(filter-out -flto -fuse-linker-plugin, $(COMMON_CFLAGS))
 analyze-stack: COMMON_CFLAGS += -fstack-usage -fno-lto -fno-ipa-cp -fno-ipa-sra
@@ -289,17 +308,21 @@ help:
 	@echo "CH32V003 JSON GUI Addon Kit - Build System"
 	@echo ""
 	@echo "Targets:"
-	@echo "  make slave         - Build slave firmware (default)"
-	@echo "  make master        - Build master firmware"
-	@echo "  make debug-slave   - Build slave with debug symbols"
-	@echo "  make debug-master  - Build master with debug symbols"
-	@echo "  make clean         - Remove build artifacts"
-	@echo "  make size-analysis - Show binary size breakdown"
-	@echo "  make analyze-stack - Generate stack usage reports"
+	@echo "  make slave               - Build slave firmware (default)"
+	@echo "  make master              - Build master firmware"
+	@echo "  make debug-slave         - Build slave with debug symbols"
+	@echo "  make debug-master        - Build master with debug symbols"
+	@echo "  make clean               - Remove build artifacts"
+	@echo "  make flash-slave         - Flash slave via local OpenOCD"
+	@echo "  make flash-master        - Flash master via local OpenOCD"
+	@echo "  make flash-slave-remote  - Flash slave via debug-probe-hub"
+	@echo "  make flash-master-remote - Flash master via debug-probe-hub"
+	@echo "  make size-analysis       - Show binary size breakdown"
+	@echo "  make analyze-stack       - Generate stack usage reports"
 	@echo ""
 	@echo "Configuration:"
 	@echo "  Toolchain: $(CC)"
 	@echo "  Target MCU: $(MCU)"
 	@echo "  Build directory: $(BUILD_DIR)/"
 
-.PHONY: all slave master debug-slave debug-master clean flash-slave flash-master debug-slave-server debug-master-server analyze-stack size-analysis help
+.PHONY: all slave master debug-slave debug-master clean flash-slave flash-master flash-slave-remote flash-master-remote debug-slave-server debug-master-server analyze-stack size-analysis help
